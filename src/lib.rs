@@ -1,6 +1,17 @@
-use std::{os::raw::c_int, ptr};
+use std::{
+    cell::Cell,
+    os::raw::c_int,
+    ptr,
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
-use classicube_sys::IGameComponent;
+use classicube_helpers::events::input;
+use classicube_sys::{
+    Entities, IGameComponent, InputButtons_CCKEY_W, LocalPlayer, ENTITIES_SELF_ID,
+};
+
+const DOUBLE_TAP_MILLIS: u64 = 400;
 
 extern "C" fn init() {
     println!(
@@ -9,20 +20,67 @@ extern "C" fn init() {
     );
 }
 
-extern "C" fn free() {
-    println!("Free");
-}
+extern "C" fn free() {}
 
-extern "C" fn reset() {
-    println!("Reset");
-}
+extern "C" fn reset() {}
 
-extern "C" fn on_new_map() {
-    println!("OnNewMap");
-}
+extern "C" fn on_new_map() {}
 
 extern "C" fn on_new_map_loaded() {
-    println!("OnNewMapLoaded");
+    thread_local!(
+        static EVENT_HANDLER: (input::DownEventHandler, input::UpEventHandler) = {
+            let mut down_handler = input::DownEventHandler::new();
+            let mut up_handler = input::UpEventHandler::new();
+
+            // TODO keybinds instead of hardcoded W
+            // TODO pressing S turns it off?
+
+            let entity_ptr = unsafe { Entities.List[ENTITIES_SELF_ID as usize] };
+            let local_player = entity_ptr as *mut LocalPlayer;
+
+            let sprinting = Rc::new(Cell::new(false));
+            let mut last_forward_down = None;
+            down_handler.on({
+                let sprinting = sprinting.clone();
+                move |input::DownEvent { key, repeating }| {
+                    if *key != InputButtons_CCKEY_W || *repeating {
+                        return;
+                    }
+
+                    let now = Instant::now();
+                    if let Some(last) = last_forward_down {
+                        if (last + Duration::from_millis(DOUBLE_TAP_MILLIS)) >= now {
+                            let local_player = unsafe { &mut *local_player };
+                            local_player.Hacks.HalfSpeeding = 1;
+                            last_forward_down = None;
+                            sprinting.set(true);
+                            return;
+                        }
+                    }
+
+                    last_forward_down = Some(now);
+                }
+            });
+            up_handler.on({
+                let sprinting = sprinting.clone();
+                move |input::UpEvent { key }| {
+                    if *key != InputButtons_CCKEY_W {
+                        return;
+                    }
+
+                    if sprinting.get() {
+                        let local_player = unsafe { &mut *local_player };
+                        local_player.Hacks.HalfSpeeding = 0;
+                        sprinting.set(false);
+                    }
+                }
+            });
+
+            (down_handler, up_handler)
+        };
+    );
+
+    EVENT_HANDLER.with(|_| {});
 }
 
 #[no_mangle]
