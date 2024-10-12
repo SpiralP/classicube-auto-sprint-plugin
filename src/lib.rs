@@ -28,9 +28,9 @@ extern "C" fn on_new_map() {}
 
 extern "C" fn on_new_map_loaded() {
     thread_local!(
-        static EVENT_HANDLER: (input::DownEventHandler, input::UpEventHandler) = {
-            let mut down_handler = input::DownEventHandler::new();
-            let mut up_handler = input::UpEventHandler::new();
+        static EVENT_HANDLER: (input::Down2EventHandler, input::Up2EventHandler) = {
+            let mut down_handler = input::Down2EventHandler::new();
+            let mut up_handler = input::Up2EventHandler::new();
 
             // TODO keybinds instead of hardcoded W
             // TODO pressing S turns it off?
@@ -42,8 +42,8 @@ extern "C" fn on_new_map_loaded() {
             let mut last_forward_down = None;
             down_handler.on({
                 let sprinting = sprinting.clone();
-                move |input::DownEvent { key, repeating }| {
-                    if *key != InputButtons_CCKEY_W || *repeating {
+                move |input::Down2Event { key, repeating, .. }| {
+                    if key != &InputButtons_CCKEY_W || *repeating {
                         return;
                     }
 
@@ -63,8 +63,8 @@ extern "C" fn on_new_map_loaded() {
             });
             up_handler.on({
                 let sprinting = sprinting.clone();
-                move |input::UpEvent { key }| {
-                    if *key != InputButtons_CCKEY_W {
+                move |input::Up2Event { key, .. }| {
+                    if key != &InputButtons_CCKEY_W {
                         return;
                     }
 

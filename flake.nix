@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   };
 
   outputs = { nixpkgs, ... }:
@@ -13,7 +13,7 @@
             inherit system;
           };
         in
-        rec {
+        {
           default = pkgs.rustPlatform.buildRustPackage {
             name = "classicube-auto-sprint-plugin";
             src = lib.cleanSourceWith {
@@ -36,7 +36,7 @@
               lockFile = ./Cargo.lock;
               outputHashes = {
                 "async-dispatcher-0.1.0" = "sha256-rqpQ176/PnI9vvPrwQvK3GJbryjb3hHkb+o1RyCZ3Vg=";
-                "classicube-helpers-2.0.0+classicube.1.3.6" = "sha256-V5PBZR0rj42crA1fGUjMk4rDh0ZpjjNcbMCe6bgotW8=";
+                "classicube-helpers-3.0.0+classicube.1.3.7" = "sha256-3hWKS6NmAH0x+SOi/nBKJLIQi/3ilG7WSRrPvF++wGE=";
               };
             };
 
